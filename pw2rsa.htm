@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<!OWN FC-System> <!-- Marked by FC-System -->
+<html>
+<head>
+	<meta charset="utf8"/>
+	<title>Pw2Rsa Toolkit - FC-SYSTEM</title>
+	<base href="http://61.186.95.108:443/portal4HN/">
+	<script type="text/javascript" src="http://61.186.95.108/portal4HN/js/security.js"></script>
+	<script type="text/javascript" src="http://61.186.95.108/portal4HN/js/portal.js"></script>
+	<style>
+		body {
+			top:0; left:0; bottom:0; right:0;3
+			margin:0;
+			background:#F0F0F0;
+			color:gray;
+		}
+		#app {
+			width:460px;
+			height:380px;
+			background:white;
+			top:50%; left:50%;
+			margin-top:-190px; margin-left:-230px;
+			position:absolute;
+			box-shadow:0 0 15px gray;
+		}
+		#app .title {
+			width:460px;
+			height:40px;
+			line-height:40px;
+			background:#00AAFC;
+			color: white;
+			text-align:center;
+			font-weight:bold;
+			margin-bottom:10px;
+		}
+		input[type='text'] {
+			width:430px;
+			height:25px;
+			margin:5px;
+			margin-top:0;
+			padding:10px 5px 10px 5px;
+			font-size:20px;
+			text-align:center;
+			border-radius:5px;
+			border:1px solid lightgray;
+			transition:box-shadow .3s;
+		}
+		input[type='text']:hover {
+			box-shadow:0 0 5px rgb(94, 203, 255);
+			background:rgb(242, 250, 255);
+		}
+		input[type='button'] {
+			width:445px;
+			height:40px;
+			font-size:20px;
+			text-align:center;
+			border-radius:5px;
+			border:1px solid #00AAFC;
+			background:#00AAFC;
+			color:white;
+			transition:box-shadow .3s;
+		}
+		input[type='button']:hover {
+			box-shadow:0 0 5px rgb(94, 203, 255);
+		}
+	</style>
+</head>
+<body>
+	<div id="main">
+		<div id="app">
+			<div class="title">Password 2 RSA Key</div>
+			<table width="460px">
+				<tr>
+					<td><input type="text" id="username" placeholder="USERNAME"/></td>
+				</tr>
+				<tr>
+					<td><input type="text" id="password" placeholder="PASSWORD"/></td>
+				</tr>
+				<tr>
+					<td align="center">
+						<input type="button" value="Generate" onclick="gen();"/>
+					</td>
+				</tr>
+				<tr>
+					<td align="center">
+						~~~~~~~~~~~~~~~ RSA Key ~~~~~~~~~~~~~~~
+					</td>
+				</tr>
+				<tr>
+					<td><input type="text" id="rsakey"/></td>
+				</tr>
+				<tr>
+					<td align="center">
+						~~~~~~~~~~~~~~~ Command ~~~~~~~~~~~~~~~
+					</td>
+				</tr>
+				<tr>
+					<td><input type="text" id="command"/></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<script language="javascript">
+	function gen() {
+		var rsakey = (RSAUtils.encryptedString(publickey, encodeURIComponent(document.getElementById("password").value)));
+		document.getElementById("rsakey").value = rsakey;
+		document.getElementById("command").value = "php chinanet.php -u "+document.getElementById("username").value+" -r "+rsakey;
+	}
+	</script>
+	<DATA><?php echo $_COOKIE["ctvalue"]; ?></DATA>
+</body>
+</html>
