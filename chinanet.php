@@ -1,13 +1,14 @@
 <?php
 // **************************************
 // Project: ChinaNet Dialer
-// Version: 0.1.0 [PHP5]
+// Version: 0.1.5 [PHP5]
 // Date:    2014年8月14日
+// Modify:	2014年9月10日
 // Design:  Pekaikon Norckon
 // Website: http://www.fcsys.us/
 // **************************************
 
-$__VERSION__  = '0.1.0';
+$__VERSION__  = '0.1.5';
 $__FILENAME__ = $_SERVER['PHP_SELF'];
 
 // ************* CONFIG *****************
@@ -15,10 +16,11 @@ $__FILENAME__ = $_SERVER['PHP_SELF'];
 $DialServer = '61.186.95.108';
 // Network Detector Cycle [msec]
 $NetDetectCycle = 1000;
+$NetSleepTime = 100;
 // NCSI Server
 $NCSIServer = "http://www.msftncsi.com/ncsi.txt";
 // IP Address Requestion Server
-$IPServer = "http://ip.qq.com";
+$IPServer = "http://ip.chinaz.com";
 // **************************************
 
 // Initizing PHP Settings
@@ -30,7 +32,7 @@ error_reporting(0);
 function FCurl($url) {
 	$ch = curl_init($url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_TIMEOUT,3);
+	curl_setopt($ch, CURLOPT_TIMEOUT,10);
 	$result = curl_exec($ch);
 	curl_close($ch);
 	return $result;
@@ -40,7 +42,7 @@ function FCurl($url) {
 function GetIP() {
 	global $IPServer;
 	$ipdoc = FCurl("$IPServer");
-	preg_match("/<span class=\"red\">(.*)<input/", $ipdoc, $ipaddr);
+	preg_match("/您的IP:\[<strong class=\"red\">(.*)<\/strong>\] 来自/", $ipdoc, $ipaddr);
 	return $ipaddr[1];
 }
 
@@ -58,21 +60,20 @@ function DialUp($username, $rsakey) {
 		FLog("Success! Connected to Internet now", 0);
 		$ipaddr = GetIP();
 		FLog("Internet IPv4 Address: $ipaddr", 0);
+		// When dialed success, waiting for DNS work
+		sleep(90);
 	}
 	else if(strpos($dialStatus, "1#-1#0#") > -1) {
 		FLog("Wrong username or RSA Key!", 3);
-		die();
 	}
 	else if(strpos($dialStatus, "2#-1#0#") > -1) {
 		FLog("You has been connected to Internet", 2);
 	}
 	else if(strpos($dialStatus, "-10") > -1) {
 		FLog("Your account has a problem", 3);
-		die();
 	}
 	else {
 		FLog("Network problem, please check your network!",4);
-		die();
 	}
 }
 
@@ -95,25 +96,29 @@ function Watchdog() {
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
-		for($i=0; $i<3; $i++) {
+		for($i=0; $i<5; $i++) {
 			$c_status = FCurl("http://$DialServer");
 			$i_status = FCurl($NCSIServer);
 			if(strpos($c_status, "portal4HN") > -1)      $c_c++;
 			if(strpos($i_status, "Microsoft NCSI") > -1) $i_c++;
+			// wait 
+			usleep($NetSleepTime*1000);
 		}
 		
 		// not logged in
-		if($i_c==0&&$c_c>=2)  {
+		if($i_c==0&&$c_c>=1)  {
 			FLog("You are not logged in, Redialing ...", 3);
 			break;
 		}
 		// no network access
 		else if($i_c==0&&$c_c==0)  {
 			FLog("No Network Access! waiting ...", 4);
+			// If no network access wait for 5 sec
+			sleep(5);
 		}
 		// internet
 		else if($i_c>=1) {
-			; //OK
+			; //OK do nothing
 		}
 		
 		// Another Cycle
@@ -145,12 +150,22 @@ function FLog($text, $class) {
 	// For Linux or Windows
 	if(file_exists("/proc/cpuinfo")) {
 		// Linux
-		$fp_log = fopen("/tmp/chinanet-dialer.log","a+");
+		//  If log filesize greater than 512k then rewrite.
+		if(filesize("/tmp/chinanet.log")>524288) {
+			$fp_log = fopen("/tmp/chinanet.log","w");
+		} else {
+			$fp_log = fopen("/tmp/chinanet.log","a+");
+		}
 		fputs($fp_log, $msg);
 		fclose($fp_log);
 	} else {
 		// Windows
-		$fp_log = fopen(dirname(__FILE__)."/chinanet-dialer.log","a+");
+		//  If log filesize greater than 512k then rewrite.
+		if(filesize("/tmp/chinanet.log")>524288) {
+			$fp_log = fopen(dirname(__FILE__)."/chinanet.log","w");
+		} else {
+			$fp_log = fopen(dirname(__FILE__)."/chinanet.log","a+");
+		}
 		fputs($fp_log, $msg);
 		fclose($fp_log);
 	}
@@ -164,7 +179,7 @@ function FVer($mode) {
 	$usage .= "by Pekaikon Norckon [website:http://www.fcsys.us]\n";
 	$usage .= "\n";
 	if($mode==1) {
-		$usage .= "Usage: php $__FILENAME__ [-u username] [-p password] [-d] [-v] [-h]\n";
+		$usage .= "Usage: php $__FILENAME__ [-u username] [-r rsakey] [-d] [-v] [-h]\n";
 		$usage .= "\n";
 		$usage .= "Option:\n";
 		$usage .= "    -u      Your ChinaNet Username\n";
