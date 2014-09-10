@@ -6,7 +6,7 @@ System Requirment: Linux or Windows With PHP
 
 --------------------
 
-Usage: php E:\My Documents\GitHub\chinanet-dialer\chinanet.php [-u username] [-r rsakey] [-d] [-v] [-h]
+Usage: php chinanet.php [-u username] [-r rsakey] [-d] [-v] [-h]
 
 Option:
     -u      Your ChinaNet Username
@@ -16,9 +16,8 @@ Option:
     -h      Show this information
 
 Example:
-         Dial:   php E:\My Documents\GitHub\chinanet-dialer\chinanet.php -u 1891
-2345678 -r 2d8e...039d
-    Disconnet:   php E:\My Documents\GitHub\chinanet-dialer\chinanet.php -d
+         Dial:   php chinanet.php -u 18912345678 -r 2d8e...039d
+    Disconnet:   php chinanet.php -d
 
 RSA Key Generate:
     Use Firefox or Chrome to open pw2rsa.htm
