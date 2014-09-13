@@ -1,14 +1,14 @@
 <?php
 // **************************************
 // Project: ChinaNet Dialer
-// Version: 0.1.5 [PHP5]
+// Version: 0.2.1 [PHP5]
 // Date:    2014年8月14日
-// Modify:	2014年9月10日
+// Modify:	2014年9月12日
 // Design:  Pekaikon Norckon
 // Website: http://www.fcsys.us/
 // **************************************
 
-$__VERSION__  = '0.1.5';
+$__VERSION__  = '0.2.1';
 $__FILENAME__ = $_SERVER['PHP_SELF'];
 
 // ************* CONFIG *****************
@@ -27,6 +27,7 @@ $IPServer = "http://ip.chinaz.com";
 date_default_timezone_set("PRC");
 set_time_limit(0);
 error_reporting(0);
+$isDetectedNoNetwork = 0;
 
 // CURL Function
 function FCurl($url) {
@@ -61,7 +62,7 @@ function DialUp($username, $rsakey) {
 		$ipaddr = GetIP();
 		FLog("Internet IPv4 Address: $ipaddr", 0);
 		// When dialed success, waiting for DNS work
-		sleep(90);
+		sleep(180);
 	}
 	else if(strpos($dialStatus, "1#-1#0#") > -1) {
 		FLog("Wrong username or RSA Key!", 3);
@@ -92,7 +93,7 @@ function Disconnect() {
 
 // Watchdog
 function Watchdog() {
-	global $NCSIServer,$DialServer,$NetDetectCycle;
+	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork;
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
@@ -112,13 +113,18 @@ function Watchdog() {
 		}
 		// no network access
 		else if($i_c==0&&$c_c==0)  {
-			FLog("No Network Access! waiting ...", 4);
+			if($isDetectedNoNetwork == 0) {
+				FLog("No Network Access! waiting ...", 4);
+				// Set donot log next time
+				$isDetectedNoNetwork = 1;
+			}
 			// If no network access wait for 5 sec
-			sleep(5);
+			// sleep(5);
 		}
 		// internet
 		else if($i_c>=1) {
-			; //OK do nothing
+			// Reset Flags
+			$isDetectedNoNetwork = 0;
 		}
 		
 		// Another Cycle

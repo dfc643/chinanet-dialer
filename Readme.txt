@@ -25,4 +25,4 @@ RSA Key Generate:
 --------------------
 
 Program Designed by Pekaikon Norckon - www.fcsys.us
-2014年9月10日 TUE / 21:56 / version 0.1 
+2014年9月12日 FRI / 21:56 / version 0.2 
