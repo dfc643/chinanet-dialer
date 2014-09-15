@@ -28,6 +28,7 @@ date_default_timezone_set("PRC");
 set_time_limit(0);
 error_reporting(0);
 $isDetectedNoNetwork = 0;
+$redialedTime = 0;
 
 // CURL Function
 function FCurl($url) {
@@ -93,7 +94,7 @@ function Disconnect() {
 
 // Watchdog
 function Watchdog() {
-	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork;
+	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime;
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
@@ -109,6 +110,17 @@ function Watchdog() {
 		// not logged in
 		if($i_c==0&&$c_c>=1)  {
 			FLog("You are not logged in, Redialing ...", 3);
+			// Redialed 5 times then relay 5 sec
+			if($redialedTime > 5) sleep(5);
+			// Redialed 10 times then relay more 55 sec, total 60 sec
+			if($redialedTime > 10) sleep(55);
+			// Redialed 15 times then exit program
+			if($redialedTime > 15) {
+				FLog("Your account has a problem", 4);
+				die();
+			}
+			// Redial Time plus
+			$redialedTime++;
 			break;
 		}
 		// no network access
@@ -125,6 +137,7 @@ function Watchdog() {
 		else if($i_c>=1) {
 			// Reset Flags
 			$isDetectedNoNetwork = 0;
+			$redialedTime = 0;
 		}
 		
 		// Another Cycle
