@@ -1,14 +1,14 @@
 <?php
 // **************************************
 // Project: ChinaNet Dialer
-// Version: 0.2.1 [PHP5]
+// Version: 0.2.4 [PHP5]
 // Date:    2014年8月14日
-// Modify:	2014年9月12日
+// Modify:	2014年9月16日
 // Design:  Pekaikon Norckon
 // Website: http://www.fcsys.us/
 // **************************************
 
-$__VERSION__  = '0.2.1';
+$__VERSION__  = '0.2.4';
 $__FILENAME__ = $_SERVER['PHP_SELF'];
 
 // ************* CONFIG *****************
@@ -19,8 +19,13 @@ $NetDetectCycle = 1000;
 $NetSleepTime = 100;
 // NCSI Server
 $NCSIServer = "http://www.msftncsi.com/ncsi.txt";
+$NCSIBackup = "http://ru.fcsys.tk/ncsi.txt";
 // IP Address Requestion Server
 $IPServer = "http://ip.chinaz.com";
+// Voice Notice [linux only]
+$VoiceEnabled = 1;
+$sTime = strtotime("8:00:00");
+$eTime = strtotime("23:30:00");
 // **************************************
 
 // Initizing PHP Settings
@@ -70,6 +75,8 @@ function DialUp($username, $rsakey) {
 	}
 	else if(strpos($dialStatus, "2#-1#0#") > -1) {
 		FLog("You has been connected to Internet", 2);
+		// If really connected to Internet waiting 15 sec.
+		sleep(15);
 	}
 	else if(strpos($dialStatus, "-10") > -1) {
 		FLog("Your account has a problem", 3);
@@ -94,7 +101,7 @@ function Disconnect() {
 
 // Watchdog
 function Watchdog() {
-	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime;
+	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime,$VoiceEnabled,$sTime,$eTime;
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
@@ -106,14 +113,23 @@ function Watchdog() {
 			// wait 
 			usleep($NetSleepTime*1000);
 		}
+		// If Main NCSI Server Failed then use Backup NCSI server
+		if($i_c==0) {
+			for($i=0; $i<3; $i++) {
+				$b_status = FCurl($NCSIBackup);
+				if(strpos($b_status, "FC-System NCSI") > -1) $i_c++;
+			}
+		}
 		
 		// not logged in
 		if($i_c==0&&$c_c>=1)  {
 			FLog("You are not logged in, Redialing ...", 3);
-			// Redialed 5 times then relay 5 sec
-			if($redialedTime > 5) sleep(5);
-			// Redialed 10 times then relay more 55 sec, total 60 sec
-			if($redialedTime > 10) sleep(55);
+			// Redialed 5 times then relay 10 sec
+			if($redialedTime >= 5) sleep(10);
+			// Redialed 5 times then relay 20 sec
+			if($redialedTime >= 8) sleep(10);
+			// Redialed 10 times then relay more 100 sec, total 120 sec
+			if($redialedTime >= 10) sleep(100);
 			// Redialed 15 times then exit program
 			if($redialedTime > 15) {
 				FLog("Your account has a problem", 4);
@@ -129,12 +145,24 @@ function Watchdog() {
 				FLog("No Network Access! waiting ...", 4);
 				// Set donot log next time
 				$isDetectedNoNetwork = 1;
+				// Play voice when network lost
+				if($VoiceEnabled) {
+					$cTime = strtotime(date("H:i:s"));
+					if($cTime>$sTime && $cTime<$eTime) {
+						shell_exec("mpg123 -q netLost.mp3");
+					}
+				}
 			}
-			// If no network access wait for 5 sec
-			// sleep(5);
 		}
 		// internet
 		else if($i_c>=1) {
+			// Play voice when network lost
+			if($VoiceEnabled && $isDetectedNoNetwork) {
+				$cTime = strtotime(date("H:i:s"));
+				if($cTime>$sTime && $cTime<$eTime) {
+					shell_exec("mpg123 -q netRecv.mp3");
+				}
+			}
 			// Reset Flags
 			$isDetectedNoNetwork = 0;
 			$redialedTime = 0;
@@ -241,7 +269,6 @@ function FMain() {
 			if($argv[$i] == "-v") $arrpos_v = $i;
 			if($argv[$i] == "-h") $arrpos_h = $i;
 		}
-		//echo ("$arrpos_d\t$arrpos_u\t$arrpos_r\t$arrpos_v\t$arrpos_h\n");
 		// Show version and help first
 		if($arrpos_h > 0) {
 			FVer(1);
