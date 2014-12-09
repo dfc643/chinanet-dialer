@@ -21,11 +21,7 @@ $NetSleepTime = 100;
 $NCSIServer = "http://www.msftncsi.com/ncsi.txt";
 $NCSIBackup = "http://ru.fcsys.tk/ncsi.txt";
 // IP Address Requestion Server
-$IPServer = "http://ip.chinaz.com";
-// Voice Notice [linux only]
-$VoiceEnabled = 1;
-$sTime = strtotime("8:00:00");
-$eTime = strtotime("23:30:00");
+$IPServer = "http://www.fcsys.us/webapp/ip.php";
 // **************************************
 
 // Initizing PHP Settings
@@ -49,8 +45,7 @@ function FCurl($url) {
 function GetIP() {
 	global $IPServer;
 	$ipdoc = FCurl("$IPServer");
-	preg_match("/您的IP:\[<strong class=\"red\">(.*)<\/strong>\] 来自/", $ipdoc, $ipaddr);
-	return $ipaddr[1];
+	return $ipdoc;
 }
 
 // Dial-up Funciton
@@ -75,8 +70,8 @@ function DialUp($username, $rsakey) {
 	}
 	else if(strpos($dialStatus, "2#-1#0#") > -1) {
 		FLog("You has been connected to Internet", 2);
-		// If really connected to Internet waiting 15 sec.
-		sleep(15);
+		// If really connected to Internet waiting 70 sec.
+		sleep(70);
 	}
 	else if(strpos($dialStatus, "-10") > -1) {
 		FLog("Your account has a problem", 3);
@@ -101,7 +96,7 @@ function Disconnect() {
 
 // Watchdog
 function Watchdog() {
-	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime,$VoiceEnabled,$sTime,$eTime;
+	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime;
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
@@ -145,24 +140,10 @@ function Watchdog() {
 				FLog("No Network Access! waiting ...", 4);
 				// Set donot log next time
 				$isDetectedNoNetwork = 1;
-				// Play voice when network lost
-				if($VoiceEnabled) {
-					$cTime = strtotime(date("H:i:s"));
-					if($cTime>$sTime && $cTime<$eTime) {
-						shell_exec("mpg123 -q netLost.mp3");
-					}
-				}
 			}
 		}
 		// internet
 		else if($i_c>=1) {
-			// Play voice when network lost
-			if($VoiceEnabled && $isDetectedNoNetwork) {
-				$cTime = strtotime(date("H:i:s"));
-				if($cTime>$sTime && $cTime<$eTime) {
-					shell_exec("mpg123 -q netRecv.mp3");
-				}
-			}
 			// Reset Flags
 			$isDetectedNoNetwork = 0;
 			$redialedTime = 0;
