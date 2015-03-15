@@ -3,12 +3,12 @@
 // Project: ChinaNet Dialer
 // Version: 0.3.1 [PHP5]
 // Date:    2014年8月14日
-// Modify:	2015年3月15日
+// Modify:	2015年3月16日
 // Design:  Pekaikon Norckon
 // Website: http://www.fcsys.us/
 // **************************************
 
-$__VERSION__  = '0.3.1';
+$__VERSION__  = '0.3.2';
 $__FILENAME__ = $_SERVER['PHP_SELF'];
 
 // ************* CONFIG *****************
