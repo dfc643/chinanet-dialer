@@ -1,14 +1,14 @@
 <?php
 // **************************************
 // Project: ChinaNet Dialer
-// Version: 0.2.4 [PHP5]
+// Version: 0.3.1 [PHP5]
 // Date:    2014年8月14日
-// Modify:	2014年9月16日
+// Modify:	2015年3月15日
 // Design:  Pekaikon Norckon
 // Website: http://www.fcsys.us/
 // **************************************
 
-$__VERSION__  = '0.2.4';
+$__VERSION__  = '0.3.1';
 $__FILENAME__ = $_SERVER['PHP_SELF'];
 
 // ************* CONFIG *****************
@@ -19,7 +19,7 @@ $NetDetectCycle = 1000;
 $NetSleepTime = 100;
 // NCSI Server
 $NCSIServer = "http://www.msftncsi.com/ncsi.txt";
-$NCSIBackup = "http://ru.fcsys.tk/ncsi.txt";
+$NCSIBackup = "http://ru.fcsys.us/ncsi.txt";
 // IP Address Requestion Server
 $IPServer = "http://www.fcsys.us/webapp/ip.php";
 // **************************************
@@ -35,7 +35,7 @@ $redialedTime = 0;
 function FCurl($url) {
 	$ch = curl_init($url);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_TIMEOUT,10);
+	curl_setopt($ch, CURLOPT_TIMEOUT,15);
 	$result = curl_exec($ch);
 	curl_close($ch);
 	return $result;
@@ -62,16 +62,12 @@ function DialUp($username, $rsakey) {
 		FLog("Success! Connected to Internet now", 0);
 		$ipaddr = GetIP();
 		FLog("Internet IPv4 Address: $ipaddr", 0);
-		// When dialed success, waiting for DNS work
-		sleep(180);
 	}
 	else if(strpos($dialStatus, "1#-1#0#") > -1) {
 		FLog("Wrong username or RSA Key!", 3);
 	}
 	else if(strpos($dialStatus, "2#-1#0#") > -1) {
 		FLog("You has been connected to Internet", 2);
-		// If really connected to Internet waiting 70 sec.
-		sleep(70);
 	}
 	else if(strpos($dialStatus, "-10") > -1) {
 		FLog("Your account has a problem", 3);
@@ -97,6 +93,9 @@ function Disconnect() {
 // Watchdog
 function Watchdog() {
 	global $NCSIServer,$DialServer,$NetDetectCycle,$isDetectedNoNetwork,$redialedTime;
+	// Get Current IP used for send keepalive packet
+	$ipaddr = GetIP();
+
 	while(true) {
 		$i_c = 0;
 		$c_c = 0;
@@ -108,6 +107,10 @@ function Watchdog() {
 			// wait 
 			usleep($NetSleepTime*1000);
 		}
+		
+		// Send keepalive packet to Dial-Server
+		$KeepAliveStatus = trim(FCurl("http://$DialServer/portal4HN/OnlineCheck?userIp=".$ipaddr."&time=".time()));
+		
 		// If Main NCSI Server Failed then use Backup NCSI server
 		if($i_c==0) {
 			for($i=0; $i<3; $i++) {
@@ -116,37 +119,43 @@ function Watchdog() {
 			}
 		}
 		
-		// not logged in
-		if($i_c==0&&$c_c>=1)  {
-			FLog("You are not logged in, Redialing ...", 3);
-			// Redialed 5 times then relay 10 sec
-			if($redialedTime >= 5) sleep(10);
-			// Redialed 5 times then relay 20 sec
-			if($redialedTime >= 8) sleep(10);
-			// Redialed 10 times then relay more 100 sec, total 120 sec
-			if($redialedTime >= 10) sleep(100);
-			// Redialed 15 times then exit program
-			if($redialedTime > 15) {
-				FLog("Your account has a problem", 4);
-				die();
+		// Get keepalive information
+		if($KeepAliveStatus==0) {
+			// not logged in
+			if($i_c==0&&$c_c>=1)  {
+				FLog("You are not logged in, Redialing ...", 3);
+				// Redialed 5 times then relay 10 sec
+				if($redialedTime >= 5) sleep(10);
+				// Redialed 5 times then relay 20 sec
+				if($redialedTime >= 8) sleep(10);
+				// Redialed 10 times then relay more 100 sec, total 120 sec
+				if($redialedTime >= 10) sleep(100);
+				// Redialed 15 times then exit program
+				if($redialedTime > 15) {
+					FLog("Your account has a problem", 4);
+					die();
+				}
+				// Redial Time plus
+				$redialedTime++;
+				break;
 			}
-			// Redial Time plus
-			$redialedTime++;
+			// no network access
+			else if($i_c==0&&$c_c==0)  {
+				if($isDetectedNoNetwork == 0) {
+					FLog("No Network Access! waiting ...", 4);
+					// Set donot log next time
+					$isDetectedNoNetwork = 1;
+				}
+			}
+			// internet
+			else if($i_c>=1) {
+				// Reset Flags
+				$isDetectedNoNetwork = 0;
+				$redialedTime = 0;
+			}
+		} else {
+			// IP or Account not matched redial
 			break;
-		}
-		// no network access
-		else if($i_c==0&&$c_c==0)  {
-			if($isDetectedNoNetwork == 0) {
-				FLog("No Network Access! waiting ...", 4);
-				// Set donot log next time
-				$isDetectedNoNetwork = 1;
-			}
-		}
-		// internet
-		else if($i_c>=1) {
-			// Reset Flags
-			$isDetectedNoNetwork = 0;
-			$redialedTime = 0;
 		}
 		
 		// Another Cycle

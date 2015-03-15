@@ -1,5 +1,6 @@
 ﻿
 ChinaNet Dialer PHP Version for Linux / Windows
+!!USED FOR HUNAN PROVINCE ONLY!!
 --------------------
 
 System Requirment: Linux or Windows With PHP
@@ -25,4 +26,4 @@ RSA Key Generate:
 --------------------
 
 Program Designed by Pekaikon Norckon - www.fcsys.us
-2014年9月12日 FRI / 21:56 / version 0.2 
+2015年3月15日 FRI / 23:47 / version 0.3.1
